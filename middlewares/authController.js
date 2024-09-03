@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { jwtSecret } = require('../config');
+require('dotenv').config();
 const logger = require('../utils/logger');
 
 const authenticateUser = (req, res, next) => {
