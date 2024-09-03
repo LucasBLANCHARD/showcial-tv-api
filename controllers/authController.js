@@ -75,9 +75,7 @@ async function login(req, res) {
   try {
     // Rechercher l'utilisateur par email
     const user = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
+      where: { email },
     });
 
     if (!user) {
@@ -91,31 +89,20 @@ async function login(req, res) {
     }
 
     const jwtSecret = process.env.JWT_SECRET;
-
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is not defined.');
     }
 
     // Générer un token JWT
-    try {
-      const token = jwt.sign(
-        { userId: user.id, email: user.email },
-        jwtSecret,
-        {
-          expiresIn: rememberMe ? '30d' : '1d',
-        }
-      );
-      res.json({ token });
-    } catch (error) {
-      console.error('Error generating JWT:', error);
-      res.status(500).json({ message: 'Failed to generate token' });
-    }
+    const token = jwt.sign({ userId: user.id, email: user.email }, jwtSecret, {
+      expiresIn: rememberMe ? '30d' : '1d',
+    });
 
     // Retourner le token
-    res.status(201).json();
+    return res.json({ token });
   } catch (error) {
-    logger.error(error);
-    res.status(500).json({ message: 'Erreur lors de la connexion.' });
+    console.error('Error during login:', error);
+    return res.status(500).json({ message: 'Erreur lors de la connexion.' });
   }
 }
 
