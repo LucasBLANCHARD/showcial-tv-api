@@ -1,0 +1,16 @@
+{
+  "auth": {
+    "same-passwords": "The new password must be different from the old one.",
+    "wrong-password": "Incorrect password.",
+    "wrong-mail": "Incorrect email address."
+  },
+  "user": {
+    "userCreated": "User created successfully.",
+    "userCreationError": "An error occurred while signing up."
+  },
+  "list": {
+    "watchlist": "Watchlist",
+    "watchlistDescription": "TV shows and Films to see later."
+  },
+  "testMessage": "This is a message test."
+}

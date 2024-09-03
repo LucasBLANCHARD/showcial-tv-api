@@ -1,0 +1,16 @@
+{
+  "auth": {
+    "same-passwords": "Le nouveau mot de passe doit être différent de l’ancien.",
+    "wrong-password": "Mot de passe incorrect.",
+    "wrong-mail": "Adresse e-mail incorrecte."
+  },
+  "user": {
+    "userCreated": "Utilisateur créé avec succès.",
+    "userCreationError": "Une erreur est survenue lors de l'inscription."
+  },
+  "list": {
+    "watchlist": "À voir",
+    "watchlistDescription": "Films et séries à voir."
+  },
+  "testMessage": "Ceci est un message de test."
+}

@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modèle utilisateur
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  username   String   @unique
+  password   String
+  profilImage String?
+  lists      List[]
+  comments   Comment[] 
+  votes      Vote[]
+  activities Activity[] 
+  role       Role     @default(USER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  followers  Follow[] @relation("userFollowers")
+  following  Follow[] @relation("userFollowing")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// Modèle liste
+model List {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  isPublic    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       Item[]
+}
+
+// Modèle film/série
+model Item {
+  id          String   @id @default(uuid())
+  listId      String
+  tmdbId      Int      // ID de TheMovieDB
+  isMovie     Boolean  // Est-ce un film ou une série ?
+  watched     Boolean  @default(false)
+  list        List     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String?
+  rating      Float?
+  userId      String
+  tmdbId      Int
+  isMovie     Boolean
+  votes       Vote[]   
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  scheduledDeletion DateTime?
+}
+
+model Vote {
+  id        String     @id @default(uuid())
+  value     Int        // +1 ou -1
+  userId    String
+  commentId String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+}
+
+model Follow {
+  followerId  String
+  followingId String
+  follower    User @relation("userFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User @relation("userFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  referenceId String
+  details     Json?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduledDeletion DateTime?
+
+  @@index([userId, createdAt])
+}
