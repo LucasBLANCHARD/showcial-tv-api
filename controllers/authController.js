@@ -1,10 +1,10 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { PrismaClient } = require('@prisma/client');
-const { jwtSecret } = require('../config');
 const { hashPassword } = require('../utils/hash');
 const logger = require('../utils/logger');
 const prisma = new PrismaClient();
+require('dotenv').config();
 
 //Fonction de création de compte
 async function signup(req, res) {
@@ -90,10 +90,26 @@ async function login(req, res) {
       return res.status(401).json({ message: req.t('auth.wrong-password') });
     }
 
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not defined.');
+    }
+
     // Générer un token JWT
-    const token = jwt.sign({ userId: user.id, email: user.email }, jwtSecret, {
-      expiresIn: rememberMe ? '30d' : '1d',
-    });
+    try {
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        jwtSecret,
+        {
+          expiresIn: rememberMe ? '30d' : '1d',
+        }
+      );
+      res.json({ token });
+    } catch (error) {
+      console.error('Error generating JWT:', error);
+      res.status(500).json({ message: 'Failed to generate token' });
+    }
 
     // Retourner le token
     res.json({ token });
