@@ -427,7 +427,7 @@ async function getItemsById(req, res) {
   try {
     // Récupération des items depuis la base de données
     if (!ids) {
-      return res.status(400).json({ error: 'Missing item ids' });
+      return res.status(204).json();
     }
 
     const items = await prisma.item.findMany({
@@ -505,10 +505,10 @@ async function getItemsById(req, res) {
       return ratingB - ratingA; // Tri décroissant
     });
 
-    res.json(sortedItems);
+    return res.json(sortedItems);
   } catch (error) {
     logger.error('Erreur lors de la récupération des items :', error);
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 

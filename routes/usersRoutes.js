@@ -6,10 +6,7 @@ const {
   getFollowings,
   deleteAccount,
 } = require('../controllers/userController.js');
-const {
-  authenticateUser,
-  authorizeProfileAccess,
-} = require('../middlewares/authController.js');
+const { authenticateUser } = require('../middlewares/authController.js');
 var router = express.Router();
 
 // Routes related to user followers
