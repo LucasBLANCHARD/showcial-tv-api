@@ -101,7 +101,6 @@ async function login(req, res) {
     // Retourner le token
     return res.json({ token });
   } catch (error) {
-    console.error('Error during login:', error);
     return res.status(500).json({ message: 'Erreur lors de la connexion.' });
   }
 }
