@@ -120,16 +120,21 @@ async function removeItemFromList(req, res) {
   const { listId } = req.body;
   const userId = req.user.userId;
   const tmdbId = parseInt(req.body.tmdbId);
+
   try {
-    const item = await prisma.item.deleteMany({
+    // Rechercher l'item avant de le supprimer
+    const item = await prisma.item.findFirst({
       where: {
         listId: listId,
         tmdbId: tmdbId,
       },
     });
-    res.json(item);
 
-    //get activity and delete it
+    if (!item) {
+      return res.status(404).json({ error: 'Item non trouvé dans la liste.' });
+    }
+
+    // Supprimer l'activité associée à cet item, s'il en existe une
     const activity = await prisma.activity.findFirst({
       where: {
         referenceId: item.id,
@@ -137,7 +142,6 @@ async function removeItemFromList(req, res) {
       },
     });
 
-    //delete it if it exists
     if (activity) {
       await prisma.activity.delete({
         where: {
@@ -145,12 +149,21 @@ async function removeItemFromList(req, res) {
         },
       });
     }
+
+    // Supprimer l'item après avoir traité l'activité
+    await prisma.item.delete({
+      where: {
+        id: item.id,
+      },
+    });
+
+    return res.json({ message: 'Item supprimé avec succès.' });
   } catch (error) {
     logger.error(
       "Erreur lors de la suppression de l'élément de la liste :",
       error
     );
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 
