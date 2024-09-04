@@ -38,22 +38,32 @@ async function addFollow(req, res) {
   const { userFollowingId } = req.body;
 
   try {
-    const userFollowing = await Promise.all([getUserById(userId)]);
+    // Vérifier si l'utilisateur actuel existe
+    const currentUser = await getUserById(userId);
 
-    if (userFollowing) {
-      const follow = await prisma.follow.create({
-        data: {
-          followerId: userId,
-          followingId: userFollowingId,
-        },
-      });
-      res.json(follow);
-    } else {
-      res.status(204).json({ error: 'Utilisateur non trouvés' });
+    if (!currentUser) {
+      return res.status(404).json({ error: 'Utilisateur actuel non trouvé' });
     }
-  } catch {
+
+    // Vérifier si l'utilisateur à suivre existe
+    const userToFollow = await getUserById(userFollowingId);
+
+    if (!userToFollow) {
+      return res.status(404).json({ error: 'Utilisateur à suivre non trouvé' });
+    }
+
+    // Ajouter la relation de suivi
+    const follow = await prisma.follow.create({
+      data: {
+        followerId: userId,
+        followingId: userFollowingId,
+      },
+    });
+
+    return res.json(follow);
+  } catch (error) {
     logger.error("Erreur lors de l'ajout d'un suivi :", error);
-    return res.status(404).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 
