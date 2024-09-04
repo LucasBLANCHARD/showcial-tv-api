@@ -21,7 +21,7 @@ async function getActivities(req, res) {
       res.json({ activities });
     } else {
       // Si l'un des deux est indéfini, on considère que c'est une erreur
-      res.status(404).json({ error: 'Utilisateur ou activitées non trouvés' });
+      res.status(204).json();
     }
   } catch (error) {
     // Log l'erreur pour le débogage
@@ -49,7 +49,7 @@ async function addFollow(req, res) {
       });
       res.json(follow);
     } else {
-      res.status(404).json({ error: 'Utilisateur non trouvés' });
+      res.status(204).json({ error: 'Utilisateur non trouvés' });
     }
   } catch {
     logger.error("Erreur lors de l'ajout d'un suivi :", error);

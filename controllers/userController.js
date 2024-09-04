@@ -97,7 +97,6 @@ async function getUsersByUsername(req, res) {
       take: parseInt(limit),
     });
 
-    // Pour chaque utilisateur, vérifier si l'utilisateur connecté le suit et est suivi par lui
     const usersWithFollow = await Promise.all(
       users.map(async (user) => {
         // Vérifie si l'utilisateur connecté suit cet utilisateur
@@ -127,15 +126,11 @@ async function getUsersByUsername(req, res) {
         };
       })
     );
-
-    if (usersWithFollow.length > 0) {
-      res.json({ users: usersWithFollow });
-    } else {
-      res.status(404).json({ error: 'Utilisateur non trouvé' });
-    }
+    // Retourne une liste vide si aucun utilisateur n'est trouvé
+    return res.json({ users: usersWithFollow });
   } catch (error) {
     logger.error('Erreur lors de la récupération des utilisateurs :', error);
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 
@@ -192,10 +187,10 @@ async function getFollowers(req, res) {
     );
 
     if (usersWithFollow.length > 0) {
-      res.json(usersWithFollow);
+      return res.json(usersWithFollow);
     } else {
       // Si l'un des deux est indéfini, on considère que c'est une erreur
-      res.status(404).json({ error: 'Utilisateurs non trouvés' });
+      return res.status(204).json();
     }
   } else {
     const { userId } = req.params;
@@ -246,9 +241,9 @@ async function getFollowers(req, res) {
     );
 
     if (usersWithFollow.length > 0) {
-      res.json(usersWithFollow);
+      return res.json(usersWithFollow);
     } else {
-      res.status(404).json({ error: 'Utilisateur ou listes non trouvés' });
+      return res.status(204).json();
     }
   }
 }
@@ -306,10 +301,10 @@ async function getFollowings(req, res) {
     );
 
     if (usersWithFollow.length > 0) {
-      res.json(usersWithFollow);
+      return res.json(usersWithFollow);
     } else {
       // Si l'un des deux est indéfini, on considère que c'est une erreur
-      res.status(404).json({ error: 'Utilisateurs non trouvés' });
+      return res.status(204).json();
     }
   } else {
     const { userId } = req.params;
@@ -360,9 +355,9 @@ async function getFollowings(req, res) {
     );
 
     if (usersWithFollow.length > 0) {
-      res.json(usersWithFollow);
+      return res.json(usersWithFollow);
     } else {
-      res.status(404).json({ error: 'Utilisateurs non trouvés' });
+      return res.status(204).json();
     }
   }
 }
