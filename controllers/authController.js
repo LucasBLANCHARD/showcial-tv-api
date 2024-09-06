@@ -8,7 +8,8 @@ require('dotenv').config();
 
 //Fonction de création de compte
 async function signup(req, res) {
-  const { email, username, password } = req.body;
+  const { username, password } = req.body;
+  const email = req.body.email.toLowerCase();
   try {
     // Vérifier si l'utilisateur existe déjà
     const existingUsers = await prisma.user.findMany({
@@ -71,7 +72,8 @@ async function signup(req, res) {
 
 // Fonction login
 async function login(req, res) {
-  const { email, password, rememberMe } = req.body;
+  const { password, rememberMe } = req.body;
+  const email = req.body.email.toLowerCase();
   try {
     // Rechercher l'utilisateur par email
     const user = await prisma.user.findUnique({
