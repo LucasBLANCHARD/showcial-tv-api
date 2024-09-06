@@ -386,7 +386,13 @@ async function getItemById(req, res) {
 
     // Si l'item n'existe pas, retourne une erreur 404
     if (!item) {
-      return res.status(404).json({ error: 'Item not found' });
+      // Si l'item n'existe pas, supprimer l'activitée associée
+      await prisma.activity.deleteMany({
+        where: {
+          referenceId: itemId,
+        },
+      });
+      return res.status(204).json();
     }
 
     let comment = null;
