@@ -79,9 +79,29 @@ const tmdbApi = {
     API_TMDB.params = {};
     API_TMDB.params.language = normalizeLanguage(language);
 
-    const response = await axios.request(API_TMDB);
+    try {
+      const response = await axios.request(API_TMDB);
+      if (response.status === 200) {
+        return response.data;
+      } else {
+        return null;
+      }
+    } catch (error) {
+      if (error.response.status === 404) {
+        return null;
+      }
+    }
+  },
 
-    return response.data;
+  getWatchProviders: async ({ tmdbId, mediaType, language }) => {
+    API_TMDB.url = `https://api.themoviedb.org/3/${mediaType}/${tmdbId}/watch/providers`;
+    API_TMDB.params = {};
+    const region = normalizeRegion(language);
+
+    const response = await axios.request(API_TMDB);
+    const watchProviders = response.data.results[region];
+
+    return watchProviders;
   },
 };
 

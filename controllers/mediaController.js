@@ -101,13 +101,22 @@ async function getItemByTmdbId(req, res) {
       language,
     });
 
+    const watchProviders = await tmdbApi.getWatchProviders({
+      tmdbId: tmdbId,
+      mediaType: mediaType,
+      language,
+    });
+
     if (response) {
-      res.json(response);
+      return res.json({
+        ...response,
+        watchProviders: watchProviders || {},
+      });
     } else {
-      res.status(404).json({ error: 'aucun film ou série trouvé' });
+      return res.status(404).json({ error: 'aucun film ou série trouvé' });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 
