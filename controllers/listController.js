@@ -362,10 +362,10 @@ async function getListAndItemsById(req, res) {
       },
     });
 
-    res.json(list);
+    return res.json(list);
   } catch (error) {
     logger.error('Erreur lors de la récupération de la liste :', error);
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 
@@ -440,7 +440,7 @@ async function getItemById(req, res) {
 }
 
 async function getItemsById(req, res) {
-  const { ids, userId } = req.query;
+  const { ids, userId, filters } = req.query;
   const language = req.detectedLanguage;
 
   try {
@@ -449,7 +449,7 @@ async function getItemsById(req, res) {
       return res.status(204).json();
     }
 
-    const items = await prisma.item.findMany({
+    let items = await prisma.item.findMany({
       where: {
         id: { in: ids },
       },
@@ -465,21 +465,81 @@ async function getItemsById(req, res) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
+    //check filters if media is set
+    if (filters.media && filters.media != 'both') {
+      if (filters.media === 'movie') {
+        items = items.filter((item) => item.isMovie);
+      } else if (filters.media === 'tv') {
+        items = items.filter((item) => !item.isMovie);
+      }
+    }
+
+    // Récupération des informations de TMDb pour chaque item
+    const itemsWithDetails = await Promise.all(
+      items.map(async (item) => {
+        const response = await tmdbApi.getItemByTmdbId({
+          tmdbId: item.tmdbId,
+          mediaType: item.isMovie ? 'movie' : 'tv',
+          language,
+        });
+
+        // Si le genre de l'item ne correspond pas à l'un des genres filtrés, on l'exclut
+        if (filters.genre && response && response.genres) {
+          // Récupérer uniquement les IDs de genres dans response.genres
+          const itemGenresIds = response.genres.map((genre) => genre.id);
+
+          // Vérifier si au moins un des genres de l'item correspond aux genres filtrés
+          const hasMatchingGenre = filters.genre.some((filterGenreId) =>
+            itemGenresIds.includes(parseInt(filterGenreId))
+          );
+
+          // Si aucun genre ne correspond, retourner null (pour l'exclusion)
+          if (!hasMatchingGenre) {
+            return null;
+          }
+        }
+
+        if (response) {
+          return {
+            ...item,
+            poster_path: response.poster_path,
+            name: item.isMovie ? response.title : response.name,
+          };
+        } else {
+          return null;
+        }
+      })
+    );
+
+    const filteredItems = itemsWithDetails.filter((item) => item !== null);
+    // Convertir filters.rating en nombre si défini
+    const ratingThreshold = filters.rating ? parseFloat(filters.rating) : null;
+
     // Récupération des commentaires pour tous les items en une seule requête
     let comments = [];
+    const tmdbIds = filteredItems.map((item) => item.tmdbId);
+
     if (userId) {
       comments = await prisma.comment.findMany({
         where: {
-          tmdbId: { in: items.map((item) => item.tmdbId) },
+          tmdbId: { in: tmdbIds },
           userId: userId,
+          // Appliquer le filtre rating si ratingThreshold est défini
+          ...(ratingThreshold !== null
+            ? { rating: { gte: ratingThreshold } }
+            : {}),
         },
       });
     } else {
       const connectedUserId = req.user.userId;
       comments = await prisma.comment.findMany({
         where: {
-          tmdbId: { in: items.map((item) => item.tmdbId) },
+          tmdbId: { in: tmdbIds },
           userId: connectedUserId,
+          // Appliquer le filtre rating si ratingThreshold est défini
+          ...(ratingThreshold !== null
+            ? { rating: { gte: ratingThreshold } }
+            : {}),
         },
       });
     }
@@ -490,35 +550,22 @@ async function getItemsById(req, res) {
       return acc;
     }, {});
 
-    // Ajouter les commentaires aux items
-    const itemsWithComment = items.map((item) => ({
-      ...item,
-      comment: commentsMap[item.tmdbId] || null,
-    }));
-
-    // Récupération des informations de TMDb pour chaque item
-    const itemsWithDetails = await Promise.all(
-      itemsWithComment.map(async (item) => {
-        const response = await tmdbApi.getItemByTmdbId({
-          tmdbId: item.tmdbId,
-          mediaType: item.isMovie ? 'movie' : 'tv',
-          language,
-        });
-
-        if (response) {
-          return {
-            ...item,
-            poster_path: response.poster_path,
-            name: item.isMovie ? response.title : response.name,
-          };
-        } else {
-          return item;
+    // Ajouter les commentaires aux items et filtrer selon rating si nécessaire
+    const itemsWithComment = filteredItems
+      .map((item) => ({
+        ...item,
+        comment: commentsMap[item.tmdbId] || null,
+      }))
+      .filter((item) => {
+        // Si ratingThreshold est défini, ne garder que les items avec un commentaire et un rating >= ratingThreshold
+        if (ratingThreshold !== null) {
+          return item.comment && item.comment.rating >= ratingThreshold;
         }
-      })
-    );
+        return true; // Sinon, garder tous les items
+      });
 
     // Trier les items par rating (rating peut être null, donc on le traite comme 0)
-    const sortedItems = itemsWithDetails.sort((a, b) => {
+    const sortedItems = itemsWithComment.sort((a, b) => {
       const ratingA = a.comment?.rating || 0;
       const ratingB = b.comment?.rating || 0;
       return ratingB - ratingA; // Tri décroissant
