@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const { hashPassword } = require('../utils/hash');
 const logger = require('../utils/logger');
 const prisma = new PrismaClient();
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 //Fonction de création de compte
@@ -60,11 +61,33 @@ async function signup(req, res) {
       },
     });
 
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.USER_MAIL,
+        pass: process.env.USER_PASSWORD,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.USER_MAIL,
+      to: process.env.USER_MAIL,
+      subject: 'Nouvel Utilisateur',
+      text: `Un nouvel arrivant est là ! Username: ${username} Email: ${email}`,
+    };
+
+    await transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        logger.error('Erreur lors de l’envoi du mail :', error);
+      } else {
+        logger.info('Email sent: ' + info.response);
+      }
+    });
     // Renvoyer l'utilisateur créé sans le mot de passe
-    res.status(201).json(userWithoutPassword);
+    return res.status(201).json(userWithoutPassword);
   } catch (error) {
     logger.error('Erreur lors de la création de l’utilisateur :', error);
-    res
+    return res
       .status(500)
       .json({ message: "Une erreur est survenue lors de l'inscription." });
   }
