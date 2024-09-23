@@ -47,6 +47,18 @@ cron.schedule('0 0 * * *', async () => {
       },
     });
 
+    //supprimer les activitées liées
+    if (commentsToDelete.length > 0) {
+      const activityIds = commentsToDelete.map((comment) => comment.id);
+      await prisma.activity.deleteMany({
+        where: {
+          referenceId: {
+            in: activityIds,
+          },
+        },
+      });
+    }
+
     // Supprimer les commentaires trouvés
     for (const comment of commentsToDelete) {
       await prisma.comment.delete({

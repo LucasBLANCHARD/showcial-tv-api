@@ -589,6 +589,10 @@ async function getCommentById(req, res) {
       },
     });
 
+    if (!comment) {
+      return res.status(404).json({ error: 'Commentaire non trouvé' });
+    }
+
     //add poster_path and name to item
     const response = await tmdbApi.getItemByTmdbId({
       tmdbId: comment.tmdbId,
@@ -601,10 +605,10 @@ async function getCommentById(req, res) {
       comment.itemName = comment.isMovie ? response.title : response.name;
     }
 
-    res.json(comment);
+    return res.json(comment);
   } catch (error) {
     logger.error('Erreur lors de la récupération du commentaire :', error);
-    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
 }
 
